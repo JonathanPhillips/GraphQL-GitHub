@@ -1,0 +1,59 @@
+from python_graphql_client import GraphqlClient
+from pandas.io.json import json_normalize
+import pandas as pd
+
+client = GraphqlClient(endpoint="https://api.github.com/graphql")
+
+def make_query(after_cursor=None):
+    return """
+    query RepositoryUsers {
+  organization(login: "caremetx") {
+    id
+    name
+    membersWithRole(first: 100, after:AFTER) {
+      totalCount
+      pageInfo {
+      startCursor
+      hasNextPage
+      endCursor
+    }
+      edges {
+        node {
+          login
+          name
+          email
+        }
+      }
+    }
+  }
+}
+""".replace(
+        "AFTER", '"{}"'.format(after_cursor) if after_cursor else "null"
+    )
+
+def fetch_users(oauth_token):
+    users = []
+    has_next_page = True
+    after_cursor = None
+
+    while has_next_page:
+      data = client.execute(
+        query=make_query(after_cursor),
+        headers={"Authorization": "Bearer {}".format(oauth_token)},
+      )
+      normalized_data = data["data"]["organization"]["membersWithRole"]["edges"] #drill down into dictionary
+      for user in normalized_data:
+        users.append(user)
+            
+      has_next_page = data["data"]["organization"]["membersWithRole"]["pageInfo"]["hasNextPage"]
+      after_cursor = data["data"]["organization"]["membersWithRole"]["pageInfo"]["endCursor"]
+    
+    return users
+
+api_token = "XXXXXXXXXXXXXXXXXX" #replace with github api key or env var
+github_users = fetch_users(api_token)
+normalized_users = pd.json_normalize(github_users) #flatten out the json with pandas
+renamed_users = normalized_users[['node.login', 'node.name', 'node.email']]
+renamed_users.columns = [['Username', 'Name', 'Email']] #rename the columns
+output = "github_users.csv"
+renamed_users.to_csv(output, index=False)
