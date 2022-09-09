@@ -7,7 +7,7 @@ client = GraphqlClient(endpoint="https://api.github.com/graphql")
 def make_query(after_cursor=None):
     return """
     query RepositoryUsers {
-  organization(login: "caremetx") {
+  organization(login: "<yourORGhere>") {
     id
     name
     membersWithRole(first: 100, after:AFTER) {
