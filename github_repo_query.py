@@ -7,7 +7,7 @@ client = GraphqlClient(endpoint="https://api.github.com/graphql")
 def make_query(after_cursor=None):
     return """
 {
-  search(query: "org:Caremetx", type: REPOSITORY, first: 100, after:AFTER) {
+  search(query: "org:<yourORGhere>", type: REPOSITORY, first: 100, after:AFTER) {
     repositoryCount
     pageInfo {
       startCursor
